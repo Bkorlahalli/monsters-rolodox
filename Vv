@@ -1,0 +1,139 @@
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import './ProfilePage.css'; // Custom CSS styles
+
+const ProfilePage = () => {
+  const [userData, setUserData] = useState(null);
+
+  // Fetch user details from API
+  useEffect(() => {
+    fetch('https://your-api-endpoint.com/user-details')
+      .then((response) => response.json())
+      .then((data) => setUserData(data))
+      .catch((error) => console.error('Error fetching user data:', error));
+  }, []);
+
+  // Animation variants
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
+  return (
+    <motion.div
+      className="profile-page"
+      initial="hidden"
+      animate="visible"
+      transition={{ duration: 0.8 }}
+    >
+      {userData ? (
+        <>
+          {/* User Details Section */}
+          <motion.div
+            className="user-details"
+            variants={fadeIn}
+            transition={{ delay: 0.2 }}
+          >
+            <h2>Welcome, {userData.name}!</h2>
+            <p>Age: {userData.age}</p>
+            <p>Height: {userData.height} cm</p>
+            <p>Weight: {userData.weight} kg</p>
+            <p>Gender: {userData.gender}</p>
+            <p>Activity Factor: {userData.activityFactor}</p>
+          </motion.div>
+
+          {/* Project Introduction Section */}
+          <motion.div
+            className="project-intro"
+            variants={fadeIn}
+            transition={{ delay: 0.4 }}
+          >
+            <h3>About Our Fitness Tracker</h3>
+            <p>
+              Our mission is to help you achieve your health goals with
+              personalized insights and easy-to-use tools.
+            </p>
+            <ul>
+              <li>Track your progress</li>
+              <li>Set fitness goals</li>
+              <li>Stay motivated every day</li>
+            </ul>
+          </motion.div>
+
+          {/* Image Gallery Section */}
+          <motion.div
+            className="image-gallery"
+            variants={fadeIn}
+            transition={{ delay: 0.6 }}
+          >
+            <h3>Explore More</h3>
+            <div className="images">
+              <motion.img
+                src="image1.jpg"
+                alt="Motivational 1"
+                whileHover={{ scale: 1.1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              />
+              <motion.img
+                src="image2.jpg"
+                alt="Motivational 2"
+                whileHover={{ scale: 1.1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              />
+              <motion.img
+                src="image3.jpg"
+                alt="Motivational 3"
+                whileHover={{ scale: 1.1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              />
+            </div>
+          </motion.div>
+        </>
+      ) : (
+        <p>Loading user details...</p>
+      )}
+    </motion.div>
+  );
+};
+
+export default ProfilePage;
+
+
+.profile-page {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  text-align: center;
+}
+
+.user-details {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.project-intro {
+  background-color: #e0f7fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.image-gallery {
+  text-align: center;
+}
+
+.image-gallery .images img {
+  width: 150px;
+  height: 150px;
+  margin: 10px;
+  border-radius: 8px;
+  object-fit: cover;
+  transition: transform 0.3s ease-in-out;
+}
+
+.image-gallery .images img:hover {
+  transform: scale(1.1);
+}
