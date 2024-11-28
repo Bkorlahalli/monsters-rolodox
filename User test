@@ -1,0 +1,60 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+public class UserServiceTest {
+
+    @InjectMocks
+    private UserService userService; // Service under test
+
+    @Mock
+    private UserRepository userRepository; // Mock the repository
+
+    @Mock
+    private PasswordEncoder passwordEncoder; // Mock the password encoder
+
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this); // Initialize mocks
+    }
+
+    @Test
+    void testRegisterUser_EncodesPassword() {
+        User newUser = new User(0, "JaneDoe", "password", "jane@example.com");
+        when(userRepository.findByUsername("JaneDoe")).thenReturn(null);
+        when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(newUser);
+
+        User result = userService.registerUser(newUser.getUsername(), "password", newUser.getEmail());
+        assertNotNull(result);
+        verify(passwordEncoder, times(1)).encode("password"); // Verify password encoding
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    void testLoginUser_ValidPassword() {
+        User existingUser = new User(1, "JohnDoe", "encodedPassword", "john@example.com");
+        when(userRepository.findByUsername("JohnDoe")).thenReturn(existingUser);
+        when(passwordEncoder.matches("password", "encodedPassword")).thenReturn(true);
+
+        boolean isPasswordCorrect = userService.validatePassword("password", existingUser.getPassword());
+        assertTrue(isPasswordCorrect);
+        verify(passwordEncoder, times(1)).matches("password", "encodedPassword");
+    }
+
+    @Test
+    void testLoginUser_InvalidPassword() {
+        User existingUser = new User(1, "JohnDoe", "encodedPassword", "john@example.com");
+        when(userRepository.findByUsername("JohnDoe")).thenReturn(existingUser);
+        when(passwordEncoder.matches("wrongPassword", "encodedPassword")).thenReturn(false);
+
+        boolean isPasswordCorrect = userService.validatePassword("wrongPassword", existingUser.getPassword());
+        assertFalse(isPasswordCorrect);
+        verify(passwordEncoder, times(1)).matches("wrongPassword", "encodedPassword");
+    }
+}
