@@ -1,0 +1,178 @@
+import React from "react";
+import axios from "axios";
+
+const WorkoutTracker = ({ userId }) => {
+  const [workouts, setWorkouts] = React.useState([]);
+  const [editLogId, setEditLogId] = React.useState(null);
+  const [updatedType, setUpdatedType] = React.useState("");
+  const [updatedDuration, setUpdatedDuration] = React.useState("");
+  const [updatedCalories, setUpdatedCalories] = React.useState("");
+  const [updatedDate, setUpdatedDate] = React.useState("");
+
+  // Fetch workout logs
+  const fetchWorkoutLogs = async () => {
+    try {
+      const response = await axios.get(`/api/workoutTracker/${userId}`);
+      setWorkouts(response.data);
+    } catch (error) {
+      console.error("Error fetching workouts:", error);
+    }
+  };
+
+  // Update a workout log
+  const handleUpdate = async (logId) => {
+    try {
+      const updatedData = {
+        type: updatedType || undefined,
+        duration: updatedDuration ? parseInt(updatedDuration) : undefined,
+        caloriesBurnt: updatedCalories ? parseInt(updatedCalories) : undefined,
+        date: updatedDate || undefined,
+      };
+
+      await axios.put(`/api/workoutTracker/${userId}/update/${logId}`, updatedData);
+      alert(`Workout log updated successfully.`);
+      setEditLogId(null);
+      fetchWorkoutLogs();
+    } catch (error) {
+      console.error("Error updating workout:", error);
+      alert("Failed to update workout log.");
+    }
+  };
+
+  // Delete a workout log
+  const handleDelete = async (logId) => {
+    try {
+      await axios.delete(`/api/workoutTracker/${userId}/delete/${logId}`);
+      alert(`Workout log deleted successfully.`);
+      fetchWorkoutLogs();
+    } catch (error) {
+      console.error("Error deleting workout:", error);
+      alert("Failed to delete workout log.");
+    }
+  };
+
+  // Edit mode setup
+  const handleEdit = (workout) => {
+    setEditLogId(workout.id);
+    setUpdatedType(workout.type);
+    setUpdatedDuration(workout.duration);
+    setUpdatedCalories(workout.caloriesBurnt);
+    setUpdatedDate(workout.date);
+  };
+
+  // Cancel edit mode
+  const cancelEdit = () => {
+    setEditLogId(null);
+    setUpdatedType("");
+    setUpdatedDuration("");
+    setUpdatedCalories("");
+    setUpdatedDate("");
+  };
+
+  React.useEffect(() => {
+    fetchWorkoutLogs();
+  }, []);
+
+  return (
+    <div className="card-body">
+      <h5 className="card-title">Workout Logs</h5>
+      {workouts.length === 0 ? (
+        <p className="text-muted">No workouts logged yet.</p>
+      ) : (
+        <table className="table table-striped">
+          <thead className="table-primary">
+            <tr>
+              <th>ID</th>
+              <th>Type</th>
+              <th>Duration (mins)</th>
+              <th>Calories Burned</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {workouts.map((workout) => (
+              <tr key={workout.id}>
+                {editLogId === workout.id ? (
+                  <>
+                    <td>{workout.id}</td>
+                    <td>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={updatedType}
+                        onChange={(e) => setUpdatedType(e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={updatedDuration}
+                        onChange={(e) => setUpdatedDuration(e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={updatedCalories}
+                        onChange={(e) => setUpdatedCalories(e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={updatedDate}
+                        onChange={(e) => setUpdatedDate(e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-success btn-sm mx-1"
+                        onClick={() => handleUpdate(workout.id)}
+                      >
+                        Save
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={cancelEdit}
+                      >
+                        Cancel
+                      </button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{workout.id}</td>
+                    <td>{workout.type}</td>
+                    <td>{workout.duration}</td>
+                    <td>{workout.caloriesBurnt}</td>
+                    <td>{workout.date}</td>
+                    <td>
+                      <button
+                        className="btn btn-primary btn-sm mx-1"
+                        onClick={() => handleEdit(workout)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDelete(workout.id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+};
+
+export default WorkoutTracker;
