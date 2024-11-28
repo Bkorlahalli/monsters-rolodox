@@ -1,0 +1,66 @@
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@WebMvcTest(UserController.class)
+public class UserControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserService userService; // Mock the service layer
+
+    @Autowired
+    private ObjectMapper objectMapper; // For JSON serialization
+
+    @Test
+    void testRegisterUser_Success() throws Exception {
+        RegisterUserRequest request = new RegisterUserRequest("JaneDoe", "password", "jane@example.com");
+        when(userService.findByUserName("JaneDoe")).thenReturn(null);
+        when(userService.registerUser(anyString(), anyString(), anyString()))
+            .thenReturn(new User(1, "JaneDoe", "encodedPassword", "jane@example.com"));
+
+        mockMvc.perform(post("/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(content().string("User registered successfully"));
+    }
+
+    @Test
+    void testLoginUser_Success() throws Exception {
+        LoginUserRequest request = new LoginUserRequest("JohnDoe", "password");
+        when(userService.findByUserName("JohnDoe"))
+            .thenReturn(new User(1, "JohnDoe", "encodedPassword", "john@example.com"));
+        when(userService.validatePassword("password", "encodedPassword")).thenReturn(true);
+
+        mockMvc.perform(post("/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(content().string("Login Successful"));
+    }
+
+    @Test
+    void testLoginUser_InvalidPassword() throws Exception {
+        LoginUserRequest request = new LoginUserRequest("JohnDoe", "wrongPassword");
+        when(userService.findByUserName("JohnDoe"))
+            .thenReturn(new User(1, "JohnDoe", "encodedPassword", "john@example.com"));
+        when(userService.validatePassword("wrongPassword", "encodedPassword")).thenReturn(false);
+
+        mockMvc.perform(post("/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isUnauthorized())
+            .andExpect(content().string("Invalid Username or Password"));
+    }
+}
