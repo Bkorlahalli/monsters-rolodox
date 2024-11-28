@@ -1,0 +1,79 @@
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import './ProfilePage.css';
+
+const ProfilePage = () => {
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const userId = localStorage.getItem('userId'); // Retrieve userId from localStorage
+
+  useEffect(() => {
+    if (userId) {
+      fetch(`https://your-api-endpoint.com/user-details/${userId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setUserData(data);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error fetching user data:', error);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false); // No user ID found
+    }
+  }, [userId]);
+
+  // Animation variants for user details card
+  const fadeIn = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { opacity: 1, x: 0 },
+  };
+
+  return (
+    <div className="profile-page">
+      <div className="background-image"></div>
+      <div className="content-container">
+        {loading ? (
+          <p>Loading...</p>
+        ) : userData ? (
+          <motion.div
+            className="user-card"
+            initial="hidden"
+            animate="visible"
+            transition={{ duration: 0.8 }}
+            variants={fadeIn}
+          >
+            <h2>Welcome, {userData.name}!</h2>
+            <p>Age: {userData.age}</p>
+            <p>Height: {userData.height} cm</p>
+            <p>Weight: {userData.weight} kg</p>
+            <p>Gender: {userData.gender}</p>
+            <p>Activity Factor: {userData.activityFactor}</p>
+          </motion.div>
+        ) : (
+          <div className="project-description">
+            <h2>About Our Fitness Tracker</h2>
+            <p>
+              Our fitness tracker is designed to help you achieve your health goals by providing personalized insights and easy-to-use tools. Here's what we offer:
+            </p>
+            <ul>
+              <li>
+                <strong>Water Intake Tracker</strong>: Stay hydrated by tracking your daily water consumption and setting hydration goals.
+              </li>
+              <li>
+                <strong>Workout Tracker</strong>: Log your workouts, monitor your progress, and stay motivated with tailored exercise plans.
+              </li>
+              <li>
+                <strong>Calorie Tracker</strong>: Monitor your calorie intake and expenditure to achieve your weight and nutrition goals.
+              </li>
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ProfilePage;
