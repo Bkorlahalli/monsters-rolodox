@@ -1,0 +1,68 @@
+const WaterIntakeTracker = ({ userId }) => {
+    const [waterLogs, setWaterLogs] = useState([]);
+    const [totalIntake, setTotalIntake] = useState(0);
+    const [selectedDate, setSelectedDate] = useState(""); // Track the date for the progress bar
+    const dailyGoal = 4500; // Set your daily goal in ml
+
+    useEffect(() => {
+        fetchWaterLogs(); // Fetch logs on component mount
+    }, [userId]);
+
+    useEffect(() => {
+        // Recalculate total intake when logs or selected date change
+        if (selectedDate) {
+            const filteredLogs = waterLogs.filter(log => log.date === selectedDate);
+            const total = filteredLogs.reduce((sum, log) => sum + (log.amount || 0), 0);
+            setTotalIntake(total);
+        }
+    }, [waterLogs, selectedDate]);
+
+    const fetchWaterLogs = async () => {
+        try {
+            const response = await getWaterIntakeByUser(userId); // Fetch logs from API
+            setWaterLogs(response.data);
+        } catch (error) {
+            console.error("Error fetching water logs:", error);
+        }
+    };
+
+    return (
+        <div>
+            <h3>Water Intake Tracker</h3>
+
+            {/* Progress Bar */}
+            <div className="mb-4">
+                {selectedDate ? (
+                    <>
+                        <h5>
+                            Total Intake for {selectedDate}: {totalIntake} ml / {dailyGoal} ml
+                        </h5>
+                        <div className="progress">
+                            <div
+                                className="progress-bar"
+                                role="progressbar"
+                                style={{
+                                    width: `${(totalIntake / dailyGoal) * 100}%`
+                                }}
+                                aria-valuenow={totalIntake}
+                                aria-valuemin="0"
+                                aria-valuemax={dailyGoal}
+                            >
+                                {((totalIntake / dailyGoal) * 100).toFixed(1)}% Complete
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <p>No logs available for the selected date.</p>
+                )}
+            </div>
+
+            {/* Add Water Intake */}
+            <div>
+                <button onClick={() => handleAddWater(250)}>Add 250ml</button>
+                <button onClick={() => handleAddWater(500)}>Add 500ml</button>
+                <button onClick={() => handleAddWater(1000)}>Add 1000ml</button>
+            </div>
+        </div>
+    );
+};
