@@ -1,0 +1,154 @@
+@SpringBootTest
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @InjectMocks
+    private UserService userService;
+
+    @Test
+    void testRegisterUser() {
+        // Arrange
+        String username = "testUser";
+        String password = "testPass";
+        String email = "test@example.com";
+
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword("encodedPassword");
+        user.setEmail(email);
+
+        Mockito.when(passwordEncoder.encode(password)).thenReturn("encodedPassword");
+        Mockito.when(userRepository.save(Mockito.any(User.class))).thenReturn(user);
+
+        // Act
+        User registeredUser = userService.registerUser(username, password, email);
+
+        // Assert
+        Assertions.assertNotNull(registeredUser);
+        Assertions.assertEquals(username, registeredUser.getUsername());
+        Assertions.assertEquals("encodedPassword", registeredUser.getPassword());
+        Assertions.assertEquals(email, registeredUser.getEmail());
+    }
+
+    @Test
+    void testViewAllUsers() {
+        // Arrange
+        List<User> users = Arrays.asList(new User(), new User());
+        Mockito.when(userRepository.findAll()).thenReturn(users);
+
+        // Act
+        List<User> result = userService.viewAllUsers();
+
+        // Assert
+        Assertions.assertEquals(2, result.size());
+    }
+
+    @Test
+    void testDeleteUser() {
+        // Act
+        userService.deleteUser(1);
+
+        // Assert
+        Mockito.verify(userRepository, Mockito.times(1)).deleteById(1);
+    }
+
+    @Test
+    void testGetUserById() {
+        // Arrange
+        User user = new User();
+        user.setId(1);
+        Mockito.when(userRepository.findById(1)).thenReturn(Optional.of(user));
+
+        // Act
+        User result = userService.getUserById(1);
+
+        // Assert
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(1, result.getId());
+    }
+}
+
+
+@WebMvcTest(UserController.class)
+class UserControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserService userService;
+
+    @MockBean
+    private PasswordEncoder passwordEncoder;
+
+    @Test
+    void testViewAllUsers() throws Exception {
+        // Arrange
+        List<User> users = Arrays.asList(new User(), new User());
+        Mockito.when(userService.viewAllUsers()).thenReturn(users);
+
+        // Act & Assert
+        mockMvc.perform(get("/viewallUsers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void testGetUserById() throws Exception {
+        // Arrange
+        User user = new User();
+        user.setId(1);
+        Mockito.when(userService.getUserById(1)).thenReturn(user);
+
+        // Act & Assert
+        mockMvc.perform(get("/id/{id}", 1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1));
+    }
+
+    @Test
+    void testRegisterUser() throws Exception {
+        // Arrange
+        RegisterUserRequest registerUserRequest = new RegisterUserRequest();
+        registerUserRequest.setUsername("testUser");
+        registerUserRequest.setPassword("testPass");
+        registerUserRequest.setEmail("test@example.com");
+
+        Mockito.when(userService.findByUserName("testUser")).thenReturn(null);
+
+        // Act & Assert
+        mockMvc.perform(post("/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(registerUserRequest)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("User registered successfully"));
+    }
+
+    @Test
+    void testLoginUser() throws Exception {
+        // Arrange
+        LoginUserRequest loginUserRequest = new LoginUserRequest();
+        loginUserRequest.setUsername("testUser");
+        loginUserRequest.setPassword("testPass");
+
+        User user = new User();
+        user.setUsername("testUser");
+        user.setPassword("encodedPassword");
+
+        Mockito.when(userService.findByUserName("testUser")).thenReturn(user);
+        Mockito.when(passwordEncoder.matches("testPass", "encodedPassword")).thenReturn(true);
+
+        // Act & Assert
+        mockMvc.perform(post("/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(loginUserRequest)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Login Successful"));
+    }
+}
