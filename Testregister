@@ -24,3 +24,128 @@ public void testRegisterUser_Success() throws Exception {
     verify(userService, times(1)).registerUser("testUser", "password123", "test@example.com");
     verify(userService, times(1)).findByUserName("testUser");  // Verify that the findByUserName method was called with the correct username
 }
+
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+class UserControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @InjectMocks
+    private UserController userController;
+
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
+        objectMapper = new ObjectMapper();
+    }
+
+    @Test
+    void testRegisterUser_Success() throws Exception {
+        RegisterUserRequest registerUserRequest = new RegisterUserRequest("testuser", "password123", "test@example.com");
+
+        when(userService.findByUserName("testuser")).thenReturn(null); // No user found with that username
+        doNothing().when(userService).registerUser(anyString(), anyString(), anyString());
+
+        mockMvc.perform(post("/users/v1.0/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(registerUserRequest)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("User registered successfully"));
+
+        verify(userService, times(1)).registerUser("testuser", "password123", "test@example.com");
+    }
+
+    @Test
+    void testRegisterUser_UsernameExists() throws Exception {
+        RegisterUserRequest registerUserRequest = new RegisterUserRequest("testuser", "password123", "test@example.com");
+
+        when(userService.findByUserName("testuser")).thenReturn(new User()); // User already exists
+
+        mockMvc.perform(post("/users/v1.0/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(registerUserRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Username already exists"));
+
+        verify(userService, times(0)).registerUser(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testLoginUser_Success() throws Exception {
+        LoginUserRequest loginUserRequest = new LoginUserRequest("testuser", "password123");
+        User user = new User();
+        user.setUsername("testuser");
+        user.setPassword("$2a$10$DwFJpJfBzUlhQs56yGwYieM99PqDZfnJh/eah3.yUQZg.m71T6Zyq"); // Encoded password "password123"
+
+        when(userService.findByUserName("testuser")).thenReturn(user);
+        when(passwordEncoder.matches("password123", user.getPassword())).thenReturn(true);
+
+        mockMvc.perform(post("/users/v1.0/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginUserRequest)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Login Successful"));
+
+        verify(userService, times(1)).findByUserName("testuser");
+    }
+
+    @Test
+    void testLoginUser_InvalidPassword() throws Exception {
+        LoginUserRequest loginUserRequest = new LoginUserRequest("testuser", "password123");
+        User user = new User();
+        user.setUsername("testuser");
+        user.setPassword("$2a$10$DwFJpJfBzUlhQs56yGwYieM99PqDZfnJh/eah3.yUQZg.m71T6Zyq"); // Encoded password "password123"
+
+        when(userService.findByUserName("testuser")).thenReturn(user);
+        when(passwordEncoder.matches("password123", user.getPassword())).thenReturn(false);
+
+        mockMvc.perform(post("/users/v1.0/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginUserRequest)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Invalid Username or Password"));
+
+        verify(userService, times(1)).findByUserName("testuser");
+    }
+
+    @Test
+    void testLoginUser_UserNotFound() throws Exception {
+        LoginUserRequest loginUserRequest = new LoginUserRequest("testuser", "password123");
+
+        when(userService.findByUserName("testuser")).thenReturn(null); // User does not exist
+
+        mockMvc.perform(post("/users/v1.0/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginUserRequest)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Invalid Username or Password"));
+
+        verify(userService, times(1)).findByUserName("testuser");
+    }
+}
