@@ -1,0 +1,98 @@
+<div class="container mt-5">
+
+  <!-- Alert message for login -->
+  <div class="alert alert-warning text-center">
+    Please Log in to Proceed!
+  </div>
+
+  <!-- Welcome section -->
+  <div class="row justify-content-center">
+    <h2 class="text-center mb-4">Welcome, {{ username || "" }} to FitPulse</h2>
+  </div>
+
+  <!-- Dashboard Metrics -->
+  <div class="row justify-content-center">
+
+    <!-- Calories Burned Card -->
+    <div class="col-md-4 mb-4">
+      <div class="card shadow-sm border-0 text-center">
+        <div class="card-body">
+          <i class="bi bi-fire text-danger fs-1"></i>
+          <h5 class="card-title mt-3">Calories Burnt</h5>
+          <p class="card-text fw-bold">{{ caloriesBurnt || "--" }} kcal</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time Spent Card -->
+    <div class="col-md-4 mb-4">
+      <div class="card shadow-sm border-0 text-center">
+        <div class="card-body">
+          <i class="bi bi-clock text-success fs-1"></i>
+          <h5 class="card-title mt-3">Time Spent</h5>
+          <p class="card-text fw-bold">{{ totalTimeSpent || "--" }} mins</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Distance Covered Card -->
+    <div class="col-md-4 mb-4">
+      <div class="card shadow-sm border-0 text-center">
+        <div class="card-body">
+          <i class="bi bi-geo-alt text-primary fs-1"></i>
+          <h5 class="card-title mt-3">Distance Covered</h5>
+          <p class="card-text fw-bold">{{ totalDistanceCovered || "--" }} km</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Charts Section -->
+  <div class="row">
+
+    <!-- Water Intake Chart -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title text-center">Water Intake Progress</h5>
+          <LineChart
+            :dataPoints="waterData"
+            :labels="waterLabels"
+            title="Water Intake (ml)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Distance Covered Chart -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="card-title text-center">Distance Covered Progress</h3>
+          <LineChart
+            :dataPoints="distanceData"
+            :labels="distanceLabels"
+            title="Distance Covered (in km)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Workout Progress Chart -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title text-center">Workout Progress</h5>
+          <LineChart
+            :dataPoints="workoutData"
+            :labels="workoutLabels"
+            title="Calories Burned"
+          />
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
