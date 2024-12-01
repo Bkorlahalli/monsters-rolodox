@@ -1,0 +1,27 @@
+@Test
+void testRegisterUser() {
+    // Mock password encoding
+    when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+    
+    // Create a user instance to mock userRepository.save() response
+    User user = new User();
+    user.setId(1);
+    user.setUsername("testUser");
+    user.setPassword("encodedPassword");
+    user.setEmail("test@example.com");
+
+    // Mock userRepository.save to return the mock user
+    when(userRepository.save(any(User.class))).thenReturn(user);
+
+    // Call the service method
+    User registeredUser = userService.registerUser("testUser", "testPassword", "test@example.com");
+
+    // Assert results
+    assertNotNull(registeredUser);
+    assertEquals("testUser", registeredUser.getUsername());
+    assertEquals("encodedPassword", registeredUser.getPassword());
+    assertEquals("test@example.com", registeredUser.getEmail());
+
+    // Verify save was called
+    verify(userRepository, times(1)).save(any(User.class));
+}
