@@ -1,1 +1,155 @@
+@RunWith(SpringRunner.class)
+@WebMvcTest(UserController.class)
+public class UserControllerTest {
 
+    @Autowired
+    private MockMvc mockMvc; // To perform HTTP requests
+
+    @MockBean
+    private UserService userService; // Mock the UserService
+
+    @MockBean
+    private PasswordEncoder passwordEncoder; // Mock the PasswordEncoder
+
+    @Test
+    public void testRegisterUser_Success() throws Exception {
+        RegisterUserRequest request = new RegisterUserRequest("testUser", "password123", "test@example.com");
+
+        // Mock the behavior of userService.findByUserName
+        when(userService.findByUserName(anyString())).thenReturn(null); // Username doesn't exist
+
+        // Mock the behavior of userService.registerUser
+        when(userService.registerUser(anyString(), anyString(), anyString())).thenReturn(new User());
+
+        // Perform POST request to /register
+        mockMvc.perform(post("/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("User registered successfully"));
+
+        // Verify userService's methods are called
+        verify(userService, times(1)).findByUserName(anyString());
+        verify(userService, times(1)).registerUser(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    public void testRegisterUser_UsernameAlreadyExists() throws Exception {
+        RegisterUserRequest request = new RegisterUserRequest("testUser", "password123", "test@example.com");
+
+        // Mock the behavior of userService.findByUserName
+        when(userService.findByUserName(anyString())).thenReturn(new User()); // Username exists
+
+        // Perform POST request to /register
+        mockMvc.perform(post("/users/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Username already exists"));
+
+        // Verify userService's methods are called
+        verify(userService, times(1)).findByUserName(anyString());
+    }
+
+    @Test
+    public void testLoginUser_Success() throws Exception {
+        LoginUserRequest request = new LoginUserRequest("testUser", "password123");
+
+        // Mock the behavior of userService.findByUserName
+        User user = new User();
+        user.setUsername("testUser");
+        user.setPassword("$2a$10$..."); // Mocked encoded password
+        when(userService.findByUserName(anyString())).thenReturn(user);
+
+        // Mock password encoder behavior
+        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
+
+        // Perform POST request to /login
+        mockMvc.perform(post("/users/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Login Successful"));
+
+        // Verify userService and passwordEncoder methods
+        verify(userService, times(1)).findByUserName(anyString());
+        verify(passwordEncoder, times(1)).matches(anyString(), anyString());
+    }
+
+    @Test
+    public void testLoginUser_InvalidUsername() throws Exception {
+        LoginUserRequest request = new LoginUserRequest("wrongUser", "password123");
+
+        // Mock the behavior of userService.findByUserName to return null (invalid user)
+        when(userService.findByUserName(anyString())).thenReturn(null);
+
+        // Perform POST request to /login
+        mockMvc.perform(post("/users/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Invalid Username or Password"));
+
+        // Verify userService method
+        verify(userService, times(1)).findByUserName(anyString());
+    }
+
+    @Test
+    public void testLoginUser_InvalidPassword() throws Exception {
+        LoginUserRequest request = new LoginUserRequest("testUser", "wrongPassword");
+
+        // Mock the behavior of userService.findByUserName
+        User user = new User();
+        user.setUsername("testUser");
+        user.setPassword("$2a$10$..."); // Mocked encoded password
+        when(userService.findByUserName(anyString())).thenReturn(user);
+
+        // Mock password encoder behavior
+        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
+
+        // Perform POST request to /login
+        mockMvc.perform(post("/users/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Invalid Username or Password"));
+
+        // Verify userService and passwordEncoder methods
+        verify(userService, times(1)).findByUserName(anyString());
+        verify(passwordEncoder, times(1)).matches(anyString(), anyString());
+    }
+
+    @Test
+    public void testViewAllUsers() throws Exception {
+        List<User> users = Arrays.asList(new User(), new User());
+
+        // Mock the behavior of userService.viewAllUsers
+        when(userService.viewAllUsers()).thenReturn(users);
+
+        // Perform GET request to /viewallusers
+        mockMvc.perform(get("/users/viewallusers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        // Verify userService's method
+        verify(userService, times(1)).viewAllUsers();
+    }
+
+    @Test
+    public void testGetUserById() throws Exception {
+        User user = new User();
+        user.setId(1);
+        user.setUsername("testUser");
+
+        // Mock the behavior of userService.getUserById
+        when(userService.getUserById(1)).thenReturn(user);
+
+        // Perform GET request to /{id}
+        mockMvc.perform(get("/users/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("testUser"));
+
+        // Verify userService's method
+        verify(userService, times(1)).getUserById(1);
+    }
+}
