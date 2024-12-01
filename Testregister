@@ -1,27 +1,26 @@
 @Test
-void testRegisterUser() {
-    // Mock password encoding
-    when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-    
-    // Create a user instance to mock userRepository.save() response
+public void testRegisterUser_Success() throws Exception {
+    // Create the RegisterUserRequest object with test data
+    RegisterUserRequest registerUserRequest = new RegisterUserRequest("testUser", "password123", "test@example.com");
+
+    // Mock the behavior of the userService's findByUserName to return null (indicating the user doesn't exist yet)
+    when(userService.findByUserName("testUser")).thenReturn(null);
+
+    // Mock the behavior of the registerUser method to return the user
     User user = new User();
-    user.setId(1);
     user.setUsername("testUser");
-    user.setPassword("encodedPassword");
+    user.setPassword(passwordEncoder.encode("password123"));
     user.setEmail("test@example.com");
+    when(userService.registerUser("testUser", "password123", "test@example.com")).thenReturn(user);
 
-    // Mock userRepository.save to return the mock user
-    when(userRepository.save(any(User.class))).thenReturn(user);
+    // Perform the POST request to /register with the registerUserRequest
+    mockMvc.perform(post("/users/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(registerUserRequest)))
+            .andExpect(status().isOk())
+            .andExpect(content().string("User registered successfully"));
 
-    // Call the service method
-    User registeredUser = userService.registerUser("testUser", "testPassword", "test@example.com");
-
-    // Assert results
-    assertNotNull(registeredUser);
-    assertEquals("testUser", registeredUser.getUsername());
-    assertEquals("encodedPassword", registeredUser.getPassword());
-    assertEquals("test@example.com", registeredUser.getEmail());
-
-    // Verify save was called
-    verify(userRepository, times(1)).save(any(User.class));
+    // Verify that the registerUser method was called with the correct arguments
+    verify(userService, times(1)).registerUser("testUser", "password123", "test@example.com");
+    verify(userService, times(1)).findByUserName("testUser");  // Verify that the findByUserName method was called with the correct username
 }
