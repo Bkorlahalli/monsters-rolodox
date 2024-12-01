@@ -1,0 +1,137 @@
+package com.example.service;
+
+import com.example.model.User;
+import com.example.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.Arrays;
+import java.util.Optional;
+
+class UserServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @InjectMocks
+    private UserService userService;
+
+    private User user;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this); // Initializes mocks
+        user = new User();
+        user.setId(1);
+        user.setUsername("testUser");
+        user.setPassword("testPassword");
+        user.setEmail("test@example.com");
+    }
+
+    @Test
+    void testRegisterUser() {
+        // Mock password encoding
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+
+        // Mock userRepository.save
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        // Call the service method
+        User registeredUser = userService.registerUser("testUser", "testPassword", "test@example.com");
+
+        // Validate results
+        assertNotNull(registeredUser);
+        assertEquals("testUser", registeredUser.getUsername());
+        assertEquals("encodedPassword", registeredUser.getPassword());
+        assertEquals("test@example.com", registeredUser.getEmail());
+
+        // Verify interactions
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    void testFindByUserName() {
+        // Mock userRepository.findByUsername
+        when(userRepository.findByUsername("testUser")).thenReturn(user);
+
+        // Call the service method
+        User foundUser = userService.findByUserName("testUser");
+
+        // Validate results
+        assertNotNull(foundUser);
+        assertEquals("testUser", foundUser.getUsername());
+
+        // Verify interactions
+        verify(userRepository, times(1)).findByUsername("testUser");
+    }
+
+    @Test
+    void testViewAllUsers() {
+        // Mock userRepository.findAll
+        when(userRepository.findAll()).thenReturn(Arrays.asList(user));
+
+        // Call the service method
+        List<User> users = userService.viewAllUsers();
+
+        // Validate results
+        assertNotNull(users);
+        assertFalse(users.isEmpty());
+        assertEquals(1, users.size());
+
+        // Verify interactions
+        verify(userRepository, times(1)).findAll();
+    }
+
+    @Test
+    void testDeleteUser() {
+        // Mock userRepository.deleteById
+        doNothing().when(userRepository).deleteById(1);
+
+        // Call the service method
+        ResponseEntity<String> response = userService.deleteUser(1);
+
+        // Validate results
+        assertNotNull(response);
+        assertEquals("Deleted user with id 1", response.getBody());
+
+        // Verify interactions
+        verify(userRepository, times(1)).deleteById(1);
+    }
+
+    @Test
+    void testGetUserById() {
+        // Mock userRepository.findById
+        when(userRepository.findById(1)).thenReturn(Optional.of(user));
+
+        // Call the service method
+        User foundUser = userService.getUserById(1);
+
+        // Validate results
+        assertNotNull(foundUser);
+        assertEquals(1, foundUser.getId());
+        assertEquals("testUser", foundUser.getUsername());
+
+        // Verify interactions
+        verify(userRepository, times(1)).findById(1);
+    }
+
+    @Test
+    void testGetUserByIdNotFound() {
+        // Mock userRepository.findById to return an empty Optional
+        when(userRepository.findById(1)).thenReturn(Optional.empty());
+
+        // Call the service method and expect an exception
+        assertThrows(RuntimeException.class, () -> userService.getUserById(1));
+    }
+}
