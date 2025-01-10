@@ -1,0 +1,45 @@
+@Test
+public void test_nonStandardMaturitiesIndicator_ruleProcessing() throws Exception {
+    // Simulate the rule engine configuration as a JSON string
+    String ruleEngineConfigJson = """
+    {
+      "field": "nonStandardMaturitiesIndicator",
+      "source": "flag_non_standard",
+      "provider": "GMI",
+      "type": "Boolean",
+      "transco": [
+        {"transco_source": "flag_non_standard ='1'", "transco_value": "true"},
+        {"transco_source": "flag_non_standard ='0'", "transco_value": "false"}
+      ],
+      "enabled": "true"
+    }
+    """;
+
+    // Use ObjectMapper to parse the configuration into XrefModelParamEntity
+    ObjectMapper objectMapper = new ObjectMapper();
+    XrefModelParamEntity xrefModelParamEntity = objectMapper.readValue(ruleEngineConfigJson, XrefModelParamEntity.class);
+
+    // Assert: Validate the parsed entity
+    assertNotNull(xrefModelParamEntity);
+    assertEquals("nonStandardMaturitiesIndicator", xrefModelParamEntity.getField());
+    assertEquals("flag_non_standard", xrefModelParamEntity.getSource());
+    assertTrue(Boolean.parseBoolean(xrefModelParamEntity.getEnabled()));
+
+    // Simulate input data (flag_non_standard) and validate the transco mapping
+    String inputFlag = "1";
+    boolean result = processFlagNonStandard(xrefModelParamEntity, inputFlag);
+    assertTrue(result);
+
+    inputFlag = "0";
+    result = processFlagNonStandard(xrefModelParamEntity, inputFlag);
+    assertFalse(result);
+}
+
+// Helper method to process flag_non_standard based on the transco rules
+private boolean processFlagNonStandard(XrefModelParamEntity entity, String flag) {
+    return entity.getTransco().stream()
+        .filter(transco -> transco.getTranscoSource().contains("flag_non_standard ='" + flag + "'"))
+        .map(transco -> Boolean.parseBoolean(transco.getTranscoValue()))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Invalid flag value: " + flag));
+}
