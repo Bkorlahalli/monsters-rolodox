@@ -1,0 +1,30 @@
+@Test
+public void test_nonStandardMaturitiesIndicator_for_future() throws Exception {
+    // Act: Get the preloaded XrefModelParamEntity
+    final XrefModelParamEntity xrefModelParamEntity = getXrefModelParamEntity(futureContractConfig);
+
+    // Assert: Validate the contents of the XrefModelParamEntity object
+    assertNotNull(xrefModelParamEntity);
+    assertEquals("nonStandardMaturitiesIndicator", xrefModelParamEntity.getField());
+    assertEquals("flag_non_standard", xrefModelParamEntity.getSource());
+    assertEquals("GMI", xrefModelParamEntity.getProvider());
+    assertEquals("Boolean", xrefModelParamEntity.getType());
+    assertTrue(Boolean.parseBoolean(xrefModelParamEntity.getEnabled()));
+
+    // Validate the transformation rules (transco)
+    List<Transco> transcoList = xrefModelParamEntity.getTransco();
+    assertNotNull(transcoList);
+    assertEquals(2, transcoList.size());
+    assertEquals("flag_non_standard ='1'", transcoList.get(0).getTranscoSource());
+    assertEquals("true", transcoList.get(0).getTranscoValue());
+    assertEquals("flag_non_standard ='0'", transcoList.get(1).getTranscoSource());
+    assertEquals("false", transcoList.get(1).getTranscoValue());
+
+    // Additional logic to validate the behavior of your method
+    // For example, if your method processes this data and generates some output:
+    boolean isNonStandard = processNonStandardMaturities(xrefModelParamEntity, "flag_non_standard ='1'");
+    assertTrue(isNonStandard);
+
+    isNonStandard = processNonStandardMaturities(xrefModelParamEntity, "flag_non_standard ='0'");
+    assertFalse(isNonStandard);
+}
