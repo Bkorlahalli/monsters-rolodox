@@ -1,0 +1,41 @@
+import org.junit.jupiter.api.Test;
+import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class FTTConverterTest {
+
+    @Test
+    public void testConvertFINRulesToEligibleCodes_WithTableData() {
+        // Define test data in a table-like structure
+        List<TestData> testDataList = List.of(
+            new TestData(List.of(List.of("ITA")), "[\"ITA\"]"),                   // Row 1: Single country
+            new TestData(List.of(List.of("ESP"), List.of("FRA")), "[\"ESP\",\"FRA\"]"), // Row 2: Multiple countries
+            new TestData(List.of(), "[]"),                                       // Row 3: Empty input
+            new TestData(List.of(List.of("ITA"), List.of("ESP", "FRA"), List.of()), "[\"ITA\",\"ESP\",\"FRA\"]") // Row 4: Mixed input
+        );
+
+        // Print header for table
+        System.out.println(String.format("%-30s | %-30s | %-30s", "FIN_FTT_RULES", "Expected Output", "Actual Output"));
+        System.out.println("-------------------------------------------------------------------------------------------");
+
+        // Loop through each test data row
+        for (TestData data : testDataList) {
+            String actualOutput = FTTConverter.convertFINRulesToEligibleCodes(data.finFttRules);
+            System.out.println(String.format("%-30s | %-30s | %-30s", data.finFttRules, data.expectedOutput, actualOutput));
+
+            // Assertion to verify correctness
+            assertEquals(data.expectedOutput, actualOutput, "Test failed for FIN_FTT_RULES: " + data.finFttRules);
+        }
+    }
+
+    // Helper class to define a row in the test data table
+    static class TestData {
+        List<List<String>> finFttRules; // Input data
+        String expectedOutput;          // Expected output
+
+        TestData(List<List<String>> finFttRules, String expectedOutput) {
+            this.finFttRules = finFttRules;
+            this.expectedOutput = expectedOutput;
+        }
+    }
+}
