@@ -1,0 +1,46 @@
+import org.junit.jupiter.api.Test;
+import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class FTTConverterTest {
+
+    @Test
+    public void testConvertFINRulesToEligibleCodes_AllScenarios() {
+        // Scenario 1: Single country
+        List<List<String>> singleCountry = List.of(
+            List.of("ITA")
+        );
+        String expectedSingle = "[\"ITA\"]";
+        String actualSingle = FTTConverter.convertFINRulesToEligibleCodes(singleCountry);
+        System.out.println("Scenario 1 - Single Country Output: " + actualSingle);
+        assertEquals(expectedSingle, actualSingle, "Single country test failed");
+
+        // Scenario 2: Multiple countries
+        List<List<String>> multipleCountries = List.of(
+            List.of("ESP"),
+            List.of("FRA")
+        );
+        String expectedMultiple = "[\"ESP\",\"FRA\"]";
+        String actualMultiple = FTTConverter.convertFINRulesToEligibleCodes(multipleCountries);
+        System.out.println("Scenario 2 - Multiple Countries Output: " + actualMultiple);
+        assertEquals(expectedMultiple, actualMultiple, "Multiple countries test failed");
+
+        // Scenario 3: Empty input
+        List<List<String>> emptyInput = List.of();
+        String expectedEmpty = "[]";
+        String actualEmpty = FTTConverter.convertFINRulesToEligibleCodes(emptyInput);
+        System.out.println("Scenario 3 - Empty Input Output: " + actualEmpty);
+        assertEquals(expectedEmpty, actualEmpty, "Empty input test failed");
+
+        // Scenario 4: Mixed input
+        List<List<String>> mixedInput = List.of(
+            List.of("ITA"),
+            List.of("ESP", "FRA"),
+            List.of()
+        );
+        String expectedMixed = "[\"ITA\",\"ESP\",\"FRA\"]";
+        String actualMixed = FTTConverter.convertFINRulesToEligibleCodes(mixedInput);
+        System.out.println("Scenario 4 - Mixed Input Output: " + actualMixed);
+        assertEquals(expectedMixed, actualMixed, "Mixed input test failed");
+    }
+}
