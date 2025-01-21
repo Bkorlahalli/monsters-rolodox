@@ -1,0 +1,74 @@
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class GalaxyDataMappingServiceTest {
+
+    private static SparkSession spark;
+    private static GalaxyDataMappingService galaxyDataMappingService;
+
+    @BeforeAll
+    public static void setUp() {
+        // Initialize SparkSession
+        spark = SparkSession.builder()
+                .appName("GalaxyDataMappingServiceTest")
+                .master("local")
+                .getOrCreate();
+
+        // Initialize GalaxyDataMappingService
+        galaxyDataMappingService = new GalaxyDataMappingService();
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        // Stop SparkSession
+        if (spark != null) {
+            spark.stop();
+        }
+    }
+
+    @Test
+    public void testSetFttEligibleCountryCode_AllCases() {
+        // Define schema
+        StructType schema = new StructType(new StructField[]{
+                new StructField("GLX", DataTypes.StringType, false, Metadata.empty()),
+                new StructField("template", DataTypes.StringType, false, Metadata.empty()),
+                new StructField("FIN_FTT_RULES", DataTypes.createArrayType(DataTypes.createArrayType(DataTypes.StringType)), false, Metadata.empty()),
+                new StructField("FTTEEligibleCountryCode", DataTypes.createArrayType(DataTypes.StringType), false, Metadata.empty())
+        });
+
+        // Define test cases
+        List<Row> rows = Arrays.asList(
+                RowFactory.create("SG_7356", "SHARE", Collections.singletonList(Collections.singletonList("ITA")), Collections.singletonList("\"ITA\"")),
+                RowFactory.create("SG_6016", "SUBSCRPTN_WRT_RIGHT", Collections.singletonList(Collections.singletonList("ITA")), Collections.singletonList("\"ITA\"")),
+                RowFactory.create("SG_2795", "DEPOSITARY_RECEIPT", Arrays.asList(Collections.singletonList("ESP"), Collections.singletonList("FRA")), Arrays.asList("\"ESP\"", "\"FRA\""))
+        );
+
+        // Create dataset
+        Dataset<Row> dataset = spark.createDataFrame(rows, schema);
+
+        // Iterate over dataset and validate each case
+        for (Row row : dataset.collectAsList()) {
+            String glx = row.getString(0);
+            List<List<String>> finFttRules = row.getList(2);
+            List<String> expectedOutput = row.getList(3);
+
+            // Call the method under test
+            List<String> result = galaxyDataMappingService.setFttEligibleCountryCode(finFttRules);
+
+            // Assert the result
+            assertEquals(expectedOutput, result, "Test failed for GLX: " + glx);
+        }
+    }
+}
