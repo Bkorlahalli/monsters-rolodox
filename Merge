@@ -1,0 +1,31 @@
+public Dataset<Row> mergeMrfObservationType(Dataset<Row> mrfDataset, Dataset<Row> observationTypeDataset) {
+    // Step 1: Select only CONTRACT_CODE and OBSERVATION_TYPE from observationTypeDataset
+    Dataset<Row> obsDatasetTrimmed = observationTypeDataset.select("CONTRACT_CODE", "OBSERVATION_TYPE");
+
+    // Step 2: Add all missing columns from mrfDataset as nulls
+    StructType targetSchema = mrfDataset.schema();
+    for (StructField field : targetSchema.fields()) {
+        String fieldName = field.name();
+        if (!obsDatasetTrimmed.columns().contains(fieldName)) {
+            obsDatasetTrimmed = obsDatasetTrimmed.withColumn(fieldName, functions.lit(null).cast(field.dataType()));
+        }
+    }
+
+    // Step 3: Reorder columns to match mrfDataset schema
+    obsDatasetTrimmed = obsDatasetTrimmed.selectExpr(Arrays.stream(targetSchema.fieldNames()).toArray(String[]::new));
+
+    // Step 4: Add OBSERVATION_TYPE column if not present in mrfDataset
+    if (!Arrays.asList(mrfDataset.columns()).contains("OBSERVATION_TYPE")) {
+        mrfDataset = mrfDataset.withColumn("OBSERVATION_TYPE", functions.lit(null));
+    }
+
+    // Step 5: Reorder mrfDataset columns to match the new rows
+    List<String> finalCols = new ArrayList<>(Arrays.asList(mrfDataset.columns()));
+    if (!finalCols.contains("OBSERVATION_TYPE")) {
+        finalCols.add("OBSERVATION_TYPE");
+    }
+    mrfDataset = mrfDataset.selectExpr(finalCols.toArray(new String[0]));
+
+    // Step 6: Union both datasets
+    return mrfDataset.unionByName(obsDatasetTrimmed);
+}
