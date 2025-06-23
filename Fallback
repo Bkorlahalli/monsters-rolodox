@@ -1,43 +1,42 @@
 private Column buildArrayStructEnrichmentColumn(Dataset<Row> dataset, FieldMappingConf mappingConf) {
     final List<StructArrayField> structFields = mappingConf.getStructArrayFields();
-    final String primaryFieldName = mappingConf.getPrimaryFieldName();
+    final Column primaryCol = dataset.col(mappingConf.getPrimaryFieldName());
 
-    // Create fallback struct for leg1
-    final Column fallbackLeg1 = functions.struct(
-        functions.lit("leg1").alias("legId"),
-        dataset.col(structFields.get(0).getMasterContractId()).alias("masterContractId"),
-        dataset.col(structFields.get(0).getWeight()).alias("weight")
-    );
+    // Build fallback struct for leg1
+    final Column fallbackColLeg1 = functions.when(
+            dataset.col(structFields.get(0).getMasterContractId()).isNotNull()
+                    .and(dataset.col(structFields.get(0).getWeight()).isNotNull()),
+            functions.struct(
+                    functions.lit("leg1").alias("legId"),
+                    dataset.col(structFields.get(0).getMasterContractId()).alias("masterContractId"),
+                    dataset.col(structFields.get(0).getWeight()).alias("weight")
+            )
+    ).otherwise(functions.lit(null));
 
-    // Create fallback struct for leg2
-    final Column fallbackLeg2 = functions.struct(
-        functions.lit("leg2").alias("legId"),
-        dataset.col(structFields.get(1).getMasterContractId()).alias("masterContractId"),
-        dataset.col(structFields.get(1).getWeight()).alias("weight")
-    );
+    // Build fallback struct for leg2
+    final Column fallbackColLeg2 = functions.when(
+            dataset.col(structFields.get(1).getMasterContractId()).isNotNull()
+                    .and(dataset.col(structFields.get(1).getWeight()).isNotNull()),
+            functions.struct(
+                    functions.lit("leg2").alias("legId"),
+                    dataset.col(structFields.get(1).getMasterContractId()).alias("masterContractId"),
+                    dataset.col(structFields.get(1).getWeight()).alias("weight")
+            )
+    ).otherwise(functions.lit(null));
 
-    // Primary struct array column
-    final Column primaryArray = dataset.col(primaryFieldName);
+    // Combine fallbacks into one array
+    final Column fallbackArray = functions.array(fallbackColLeg1, fallbackColLeg2);
 
-    // Convert primary array to a map keyed by legId
-    Column primaryMap = functions.map_from_entries(
-        functions.transform(primaryArray, struct -> functions.struct(struct.getField("legId"), struct))
-    );
+    // Merge primary and fallback
+    Column mergedArray = functions.flatten(functions.array(primaryCol, fallbackArray));
 
-    // Build fallback map
-    Column fallbackMap = functions.map_from_entries(
-        functions.array(
-            functions.struct(fallbackLeg1.getField("legId"), fallbackLeg1),
-            functions.struct(fallbackLeg2.getField("legId"), fallbackLeg2)
-        )
-    );
+    // Deduplicate by legId using transform & map approach
+    Column uniqueStructsByLegId = functions.map_values(functions.map_from_entries(
+            functions.transform(mergedArray, struct ->
+                    functions.struct(struct.getField("legId"), struct)
+            )
+    ));
 
-    // Merge maps: primaryMap overrides fallbackMap
-    Column mergedMap = functions.map_concat(fallbackMap, primaryMap);
-
-    // Final updated array
-    Column enrichedArray = functions.map_values(mergedMap);
-
-    // Apply enrichment only if primary is null or empty
-    return when(isNullOrEmpty(primaryArray), enrichedArray).otherwise(primaryArray);
+    // Return fallback if primary is null/empty, else deduplicated result
+    return when(isNullOrEmpty(primaryCol), fallbackArray).otherwise(uniqueStructsByLegId);
 }
