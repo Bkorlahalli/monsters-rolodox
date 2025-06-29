@@ -197,3 +197,13 @@ Column updatedArray = transform(
 df.withColumn("structArrayFields", updatedArray);
 ```
 
+
+return expr(
+    "transform(" + primaryCol.toString() + ", x -> " +
+        "CASE " +
+            "WHEN x.legId = 'leg1' THEN named_struct('legId', x.legId, 'masterContractId', 'NEW_ID1', 'weight', 'NEW_WEIGHT1') " +
+            "WHEN x.legId = 'leg2' THEN named_struct('legId', x.legId, 'masterContractId', 'NEW_ID2', 'weight', 'NEW_WEIGHT2') " +
+            "ELSE x END" +
+    ")"
+);
+
