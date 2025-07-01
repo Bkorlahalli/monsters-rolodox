@@ -1,0 +1,119 @@
+✅ Objective:
+You want to send Outlook (Microsoft 365) emails using Java code, but cannot use passwords directly because:
+
+MFA (Multi-Factor Authentication) is enabled
+
+App passwords are not allowed in your organization
+
+So, you need to use OAuth2 authentication — the modern, secure way.
+
+💡 What is OAuth2 (in simple terms)?
+OAuth2 lets your app connect to Microsoft’s servers securely, without needing to store or send your password.
+
+Your app uses a secret key (client secret) and app ID (client ID) to ask Microsoft:
+
+“Can I act as this user and send an email?”
+
+If Microsoft says “yes,” it gives your app a temporary access token.
+
+🔧 Key Concepts You Need to Know
+Term	What it means
+Azure App Registration	A record in Azure saying “this is a trusted app”
+Client ID	Like a username for your app
+Client Secret	Like a password for your app
+Tenant ID	ID for your company’s Microsoft 365 account
+Access Token	A time-limited key to send requests (like sending mail)
+Microsoft Graph API	The modern way to send mail via HTTP instead of SMTP
+
+🔄 Step-by-Step Flow (Visual Breakdown)
+1. Register Your App in Azure
+You tell Microsoft:
+
+“This is my Java app, it needs permission to send email.”
+
+➡️ Microsoft gives you:
+
+client_id
+
+tenant_id
+
+client_secret
+
+2. Add Email Sending Permissions
+You give your app permissions like:
+
+Mail.Send
+
+SMTP.Send (only if using SMTP)
+
+➡️ Your Admin must approve these permissions.
+
+3. Your App Requests an Access Token
+Using HTTP, your app says:
+
+“Hi Microsoft, I’m app client_id, here’s my secret. Please give me access to send mail.”
+
+➡️ Microsoft responds with an access_token.
+
+4. Your App Uses That Token to Send Email
+Either via:
+
+SMTP (like a mail server)
+
+Graph API (like calling an API over HTTPS)
+
+🟢 Recommended Method: Microsoft Graph API
+Why?
+
+Feature	Graph API	SMTP
+Works with OAuth2	✅	✅ (but harder)
+Works with client credentials (no user login)	✅	❌
+Secure & Modern	✅	⚠️ Outdated
+Easier to debug and scale	✅	❌
+
+✅ Final Tech Stack Recommendation
+Use Microsoft Graph API
+
+Use client credentials flow for OAuth2
+
+Use Java HTTP client to:
+
+Get token
+
+Send mail request
+
+🎯 What You Need from IT/Admin
+Register the app in Azure
+
+Give you:
+
+client_id
+
+tenant_id
+
+client_secret
+
+Approve these permissions:
+
+Mail.Send
+
+offline_access
+
+Allow Graph API access
+
+🛠️ Once Setup Is Done, Your Java Code Will:
+Call Microsoft to get access token.
+
+Use that token to send a mail using a Graph API HTTP POST request.
+
+✅ Next Step For You
+Confirm: Do you want to send using Graph API (recommended)?
+
+If yes, I’ll give you:
+
+A ready-to-run Java example
+
+A Postman collection (if you want to test before coding)
+
+Curl script for token testing
+
